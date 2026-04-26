@@ -1,0 +1,32 @@
+---
+title: "The Hardest Bug I Ever Fixed"
+date: "2026-04-20"
+excerpt: "A fictional but realistic story about a Next.js and Supabase bug that hid in plain sight."
+tags: ["nextjs", "supabase", "debugging"]
+---
+
+The hardest bug I ever fixed was not dramatic at first. It looked like a normal auth issue: users could sign in, but sometimes the dashboard loaded as if they were logged out.
+
+The strange part was the word sometimes. On a fresh reload it worked. After navigating from another page, it failed. In development it was rare. In production it happened often enough to feel personal.
+
+## The misleading clue
+
+My first guess was Supabase session handling. I checked environment variables, redirect URLs, cookie settings, and middleware. Everything looked correct.
+
+Then I blamed caching. Since this was a Next.js App Router project, I started looking at server components and whether a fetch call was being cached when it should not be. That was closer, but still not the full story.
+
+The dashboard was reading the user on the server, then a client component was making a second request for profile data. When the session cookie was not available during one render path, the profile call returned null, and the UI quietly treated that as a logged-out state.
+
+## The actual fix
+
+The fix was boring in the best way. I made one server-side source of truth for the current user, passed the required user data down to the page, and made the client component handle loading and empty states separately from logged-out states.
+
+I also changed the Supabase call so it never failed silently. If the user was missing, the page redirected. If the profile was missing, the UI showed a setup state. Those are different problems, so they deserved different code paths.
+
+## What the bug taught me
+
+The lesson was not just about Supabase or Next.js. It was about naming states correctly.
+
+"No session", "loading session", "profile not created", and "request failed" can all look like empty data if the code is careless. Once I separated those states, the bug stopped being mysterious.
+
+Most hard bugs are not hard because the final fix is complicated. They are hard because the system is telling you three stories at once, and you have to slow down enough to hear the real one.
